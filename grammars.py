@@ -77,6 +77,5 @@ english_questions_pre_intermediate = [
     "Is the food cooked by your mother or father?",
     "What will you do if it rains tomorrow?",
     "Can you ask me where the nearest bus stop is, indirectly?",
-    "What might you do in your next vacation?",
     "Do you have to work on weekends?"
 ]
