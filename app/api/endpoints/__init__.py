@@ -1,0 +1,1 @@
+from .exercises import router as exercises_router # noqa

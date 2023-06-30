@@ -18,7 +18,7 @@ class PreBase:
 
 Base = declarative_base(cls=PreBase)
 
-engine = create_async_engine(get_settings().database_url)
+engine = create_async_engine(get_settings().database_url, echo=True)
 
 async_session = async_sessionmaker(engine)
 
