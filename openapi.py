@@ -11,42 +11,37 @@ load_dotenv('.env')
 
 
 SYS_CONTENT = (
-    "You are a English teacher. Point out grammatical errors. Here is "
-    "an example: "
-    "User response:"
-    "I walked, and stop"
-
-    "Your answer:"
-    '1. Replace "stop" with "stopped" in the past tense'
-    '2. After the word "walked" is not needed exactly'
-
-    "Write the correct answer at the end:\n"
-    "I walked and stopped"
+    "You are a English teacher. Check my answers. "
+    "Explain the mistakes and suggest how the sentence can be improved. "
+    "Suggest your own answer considering all the conditions of the question."
 )
 INIT_MSG = (
     'Question:\n'
-    f'{random.choice(english_questions_beginner)}' + ' ' + f'{random.choice(grammar_conditions_beginner)}'
+    f'{random.choice(english_questions_pre_intermediate)}' +
+    ' ' + f'{random.choice(grammar_conditions_pre_intermediate)}' +
+    ' in at least one of your sentences.'
 )
-MODEL = "gpt-3.5-turbo"
+MODEL = "gpt-3.5-turbo-16k"
 openai.api_key = os.getenv('OPENAI_API_KEY')
 openai.organization = os.getenv('OPENAI_ORG')
 
-request: list = [
+dialog: list = [
     {"role": "system", "content": SYS_CONTENT},
-    {"role": "user", "content": 'What is your favorite color and why? Use simple present tense'},
-    {"role": "user", "content": 'Check my answer: I like blue because the sky.'}
 ]
 
 
-def create_chat_completion():
+def create_chat_completion(request):
     response: OpenAIObject = openai.ChatCompletion.create(
         model=MODEL,
         messages=request,
         temperature=1,
+        max_tokens=300
     )
     return response.choices[0].message.content
 
 
 if __name__ == '__main__':
-    print(request)
-    print(create_chat_completion())
+    dialog.append({"role": "user", "content": INIT_MSG},)
+    print(dialog[-1]['content'])
+    dialog.append({"role": "user", "content": "Check my answer: " + input()},)
+    print(create_chat_completion(dialog))
