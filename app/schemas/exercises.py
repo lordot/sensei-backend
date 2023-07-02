@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 
 from pydantic import BaseModel
 
@@ -25,7 +25,7 @@ class ExWritingUpdate(BaseModel):
 
 
 class ExerciseWithConditions(BaseModel):
-    exercise: Optional[ExWritingRead]
+    exercise: ExWritingRead
     conditions: Optional[list[ConditionRead]]
 
     class Config:
