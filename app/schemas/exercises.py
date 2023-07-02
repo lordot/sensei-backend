@@ -1,5 +1,8 @@
+from typing import Optional
+
 from pydantic import BaseModel
 
+from .conditions import ConditionRead
 from ..models.exercises import Level
 
 
@@ -15,3 +18,15 @@ class ExWritingRead(BaseModel):
 class ExWritingCreate(BaseModel):
     level: Level
     question: str
+
+
+class ExWritingUpdate(BaseModel):
+    pass
+
+
+class ExerciseWithConditions(BaseModel):
+    exercise: Optional[ExWritingRead]
+    conditions: Optional[list[ConditionRead]]
+
+    class Config:
+        orm_mode = True
