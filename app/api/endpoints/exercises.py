@@ -1,4 +1,4 @@
-from typing import Optional, Annotated
+from typing import Optional, Annotated, Union
 
 from fastapi import APIRouter, Depends, Query, Path, Body
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,10 +8,11 @@ from app.core.config import get_settings
 from app.core.db import get_async_session
 from app.crud.conditions import condition_crud
 from app.models.enums import Type, Level
+from app.schemas.examinations import Answer
 from app.schemas.exercises import ExWritingRead, ExWritingCreate, ExerciseWithConditions
 from app.models import ExWriting
-from app.crud.exercises import exwriting_crud
-from app.services.examinations import get_examination_from_openai
+from app.crud.exercises import exwriting_crud, EX_TYPES
+from app.services.examinations import make_query_message, get_exam_from_openai
 
 DEFAULT_CON_COUNT = get_settings().conditions_count
 
@@ -19,16 +20,27 @@ router = APIRouter()
 
 
 @router.get(
-    '/',
+    '/{ex_type}/random',
     response_model_exclude_none=True
 )
-async def get_one(
-        ex_type: str,
-        count: Annotated[int, Query(ge=0, le=3)] = DEFAULT_CON_COUNT,
-        level: Optional[Level] = None,
-        con_types: Optional[list[Type]] = Query(None),
+async def get_random(
+        ex_type: str,  # TODO: change all arguments to pydantic model
+        count: Annotated[
+            int,
+            Query(ge=0, le=3, title='Count of conditions', alias='Count of conditions')
+        ] = DEFAULT_CON_COUNT,
+        level: Optional[Level] = Query(None, alias='Level of exercise'),
+        con_types: Optional[list[Type]] = Query(None, alias='Types of conditions'),
         session: AsyncSession = Depends(get_async_session)
 ) -> ExerciseWithConditions:
+    """
+    Get random exercise with conditions.\n
+    **Arguments**:\n
+     - **ex_type**: Exercise type. Available types: writing.\n
+     - **count**: Count of conditions. Available values: 0, 1, 2, 3.\n
+     - **level**: Level of exercise. Available values: A1, A2, B1, B2, C1, C2.\n
+     - **con_types**: Types of conditions.
+    """
     exercise = await check_exercise_exist(ex_type, level, session)
     conditions = await condition_crud.get_random(
         session, count, level, con_types
@@ -36,33 +48,34 @@ async def get_one(
     return ExerciseWithConditions(exercise=exercise, conditions=conditions)
 
 
-@router.post('/examination')
+@router.post('/examination')  # TODO: separate endpoint to its own router
 async def examination(
-        ex_type: str,
-        exercise_id: Annotated[int, Body(ge=1)],
-        conditions_id: Annotated[list[int | None], Body(ge=1)],
-        answer: Annotated[str, Body(max_length=250)],
+        answer: Answer,
         session: AsyncSession = Depends(get_async_session)
-):
-    exercise = await check_exercise_by_id(ex_type, exercise_id, session)
-    conditions = await check_conditions_by_id(conditions_id, session)
-    exam = await get_examination_from_openai(
+):  # TODO: pydantic model as response
+    exercise = await check_exercise_by_id(
+        answer.ex_type,
+        answer.exercise_id,
+        session
+    )
+    conditions = await check_conditions_by_id(answer.conditions_id, session)
+    examination = await get_exam_from_openai(
         exercise,
         conditions,
-        answer
+        answer.text
     )
-    return exam
+    return examination  # TODO: or warning message
 
 
-@router.get('/all', response_model=list[ExWritingRead])
+@router.get('/all', response_model=list[ExWritingRead])  # TODO: only for superuser
 async def get_all(
         session: AsyncSession = Depends(get_async_session)
 ) -> list[ExWriting]:
     return await exwriting_crud.get_multi(session)
 
 
-@router.post('/', response_model=list[ExWritingRead])
-async def create_multi(
+@router.post('/bulk', response_model=list[ExWritingRead])  # TODO: only for superuser
+async def create_bulk(
         objects_in: list[ExWritingCreate],
         session: AsyncSession = Depends(get_async_session),
 ) -> list[ExWriting]:

@@ -22,3 +22,7 @@ class CRUDExWriting(CRUDBase[ExWriting, ExWritingCreate, ExWritingCreate]):
 
 
 exwriting_crud = CRUDExWriting(ExWriting)
+
+EX_TYPES = {
+    'writing': exwriting_crud
+}

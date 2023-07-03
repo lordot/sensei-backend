@@ -5,6 +5,7 @@ from pydantic import BaseSettings
 
 class Settings(BaseSettings):
     openai_api_key: str
+    openai_org: str
     database_url: str
     title: str = 'Sensei backend'
     conditions_count: int = 1
