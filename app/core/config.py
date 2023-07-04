@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     database_url: str
     title: str = 'Sensei backend'
     conditions_count: int = 1
+    jwt_secret: str = 'SECRET'
 
     class Config:
         env_file = '.env'

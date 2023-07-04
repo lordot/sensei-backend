@@ -12,7 +12,7 @@ MAX_TOKENS = 300
 MODEL = "gpt-3.5-turbo-16k"
 SYS_CONTENT = (
     "You are a English teacher. Check my answers. Do not repeat user answer."
-    "Explain the mistakes and suggest how the sentence can be improved. "
+    "Explain the mistakes and suggest how the sentence can be improved."
     "At the end, indicate the verdict: Accepted, rejected"
 )
 
@@ -55,7 +55,7 @@ async def get_exam_from_openai(
     except openai.error.OpenAIError as e:
         print(f'Error: {e}')
         return "Sorry, I am a little busy now. Try again later."  # TODO: add variable with this message
-    out_t, in_t, _ = response.usage.values()
+    out_t, in_t, _ = response.usage.values()  # TODO: create func to minus balance
     exam = response.choices[0].message.content
     print(f'Out tokens: {out_t}, In tokens: {in_t}')
     return exam

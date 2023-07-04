@@ -43,3 +43,8 @@ async def check_conditions_by_id(
             raise HTTPException(404, f"Don't have condition with ID: {obj_id}!")
         conditions.append(condition)
     return conditions
+
+
+async def check_user_balance(user):
+    if user.tokens < 100:
+        raise HTTPException(400, 'Not enough money!')
