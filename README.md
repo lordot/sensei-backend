@@ -14,7 +14,7 @@ Sensei-Backend - это проект, разработанный для помо
 1. Клонируйте репозиторий на ваш локальный компьютер или сервер:
 
 ```
-git clone https://github.com/yourusername/sensei-backend.git
+git clone https://github.com/lordot/sensei-backend.git
 ```
 
 2. Перейдите в директорию проекта:
