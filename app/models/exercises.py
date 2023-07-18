@@ -11,5 +11,9 @@ class Exercise(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
 
-class ExWriting(Exercise):
+class Writing(Exercise):
     question = Column(Text, nullable=False, unique=True)
+
+
+class Reading(Exercise):
+    text = Column(Text, nullable=False, unique=True)

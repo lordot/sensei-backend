@@ -1,18 +1,24 @@
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.crud.exercises import exwriting_crud, EX_TYPES
+from app.crud.exercises import writing_crud, EX_TYPES
 from app.crud.conditions import condition_crud
 from app.models import Condition
-from app.models.exercises import Exercise, ExWriting
+from app.models.exercises import Exercise, Writing
 from app.models.enums import Level
+
+MIN_TOKENS = 100
+
+
+async def check_exercise_type(exercise_type: str):
+    if exercise_type not in EX_TYPES:
+        raise HTTPException(404, 'Incorrect exercise type!')
 
 
 async def check_exercise_exist(
         exercise_type: str, level: Level, session: AsyncSession
 ) -> Exercise:
-    if exercise_type not in EX_TYPES:
-        raise HTTPException(404, 'Incorrect exercise type!')
+    await check_exercise_type(exercise_type)
     exercise = await EX_TYPES[exercise_type].get_random(session, level)
     if not exercise:
         raise HTTPException(404, 'No exercises with these criteria!')
@@ -23,7 +29,7 @@ async def check_exercise_by_id(
         exercise_type: str,
         exercise_id: int,
         session: AsyncSession
-) -> ExWriting:
+) -> Writing:
     if exercise_type not in EX_TYPES:
         raise HTTPException(404, 'Incorrect exercise type!')
     exercise = await EX_TYPES[exercise_type].get(exercise_id, session)
@@ -46,5 +52,5 @@ async def check_conditions_by_id(
 
 
 async def check_user_balance(user):
-    if user.tokens < 100:
+    if user.tokens < MIN_TOKENS:
         raise HTTPException(400, 'Not enough money!')

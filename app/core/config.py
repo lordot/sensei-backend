@@ -1,9 +1,12 @@
 from functools import lru_cache
+from typing import Optional
 
-from pydantic import BaseSettings
+from pydantic import BaseSettings, EmailStr
 
 
 class Settings(BaseSettings):
+    first_superuser_email: Optional[EmailStr] = None
+    first_superuser_password: Optional[str] = None
     openai_api_key: str
     openai_org: str
     database_url: str

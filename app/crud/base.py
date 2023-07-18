@@ -2,10 +2,11 @@ from typing import Generic, List, Optional, Type, TypeVar
 
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import Base
+
 # from app.models import User
 
 ModelType = TypeVar('ModelType', bound=Base)
@@ -91,3 +92,15 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         for obj in objects:
             await session.refresh(obj)
         return objects
+
+    async def get_random(
+            self,
+            session: AsyncSession,
+            level: str = None
+    ) -> ModelType:
+        stmt = select(self.model)
+        if level:
+            stmt = stmt.where(self.model.level == level)
+        stmt = stmt.order_by(func.random())
+        exercise = await session.execute(stmt)
+        return exercise.scalars().first()

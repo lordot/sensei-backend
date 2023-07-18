@@ -1,2 +1,2 @@
 from .db import Base # noqa
-from ..models import ExWriting, Condition # noqa
+from ..models import Writing, Condition # noqa

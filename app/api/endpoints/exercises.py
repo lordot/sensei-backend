@@ -3,17 +3,20 @@ from typing import Optional, Annotated, Union
 from fastapi import APIRouter, Depends, Query, Path, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.validations import check_exercise_exist, check_exercise_by_id, check_conditions_by_id, check_user_balance
+from app.api.validations import check_exercise_exist, check_exercise_by_id, check_conditions_by_id, check_user_balance, \
+    check_exercise_type
 from app.core.config import get_settings
 from app.core.db import get_async_session
 from app.core.users import current_user, current_superuser
 from app.crud.conditions import condition_crud
 from app.models.enums import Type, Level
+from app.models.exercises import Exercise
 from app.schemas.examinations import Answer
-from app.schemas.exercises import ExWritingRead, ExWritingCreate, ExerciseWithConditions
-from app.models import ExWriting, User
-from app.crud.exercises import exwriting_crud, EX_TYPES
+from app.schemas.exercises import WritingRead, WritingCreate, WritingWithConditions, ReadingRead
+from app.models import Writing, User
+from app.crud.exercises import writing_crud, EX_TYPES
 from app.services.examinations import make_query_message, get_exam_from_openai
+from app.services.tokens import reduce_balance
 
 DEFAULT_CON_COUNT = get_settings().conditions_count
 
@@ -30,11 +33,10 @@ async def get_random(
             int,
             Query(ge=0, le=3, title='Count of conditions', alias='Count of conditions')
         ] = DEFAULT_CON_COUNT,
-        # level: Optional[Level] = Query(None, alias='Level of exercise'),
         con_types: Optional[list[Type]] = Query(None, alias='Types of conditions'),
         session: AsyncSession = Depends(get_async_session),
         user: User = Depends(current_user)
-) -> ExerciseWithConditions:
+) -> WritingWithConditions:
     """
     Get random exercise with conditions.\n
     **Arguments**:\n
@@ -47,7 +49,7 @@ async def get_random(
     conditions = await condition_crud.get_random(
         session, count, user.level, con_types
     )
-    return ExerciseWithConditions(exercise=exercise, conditions=conditions)
+    return WritingWithConditions(exercise=exercise, conditions=conditions)
 
 
 @router.post('/examination')  # TODO: separate endpoint to its own router
@@ -63,33 +65,36 @@ async def examination(
         session
     )
     conditions = await check_conditions_by_id(answer.conditions_id, session)
-    examination = await get_exam_from_openai(
+    examination, tokens = await get_exam_from_openai(
         exercise,
         conditions,
         answer.text
     )
+    await reduce_balance(user, tokens, session)
     return examination  # TODO: or warning message
 
 
 @router.get(
-    '/all',
-    response_model=list[ExWritingRead],
+    '/{ex_type}/all',
+    response_model=list[WritingRead | ReadingRead],
     dependencies=[Depends(current_superuser)]
 )
 async def get_all(
+        ex_type: str,
         session: AsyncSession = Depends(get_async_session)
-) -> list[ExWriting]:
-    return await exwriting_crud.get_multi(session)
+) -> list[Exercise]:
+    await check_exercise_type(ex_type)
+    return await EX_TYPES[ex_type].get_multi(session)
 
 
 @router.post(
     '/bulk',
-    response_model=list[ExWritingRead],
+    response_model=list[WritingRead],
     dependencies=[Depends(current_superuser)]
 )
 async def create_bulk(
-        objects_in: list[ExWritingCreate],
+        objects_in: list[WritingCreate],
         session: AsyncSession = Depends(get_async_session),
-) -> list[ExWriting]:
-    exercises = await exwriting_crud.bulk_create(objects_in, session)
+) -> list[Writing]:
+    exercises = await writing_crud.bulk_create(objects_in, session)
     return exercises
